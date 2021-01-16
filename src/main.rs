@@ -9,7 +9,7 @@ struct Opt {
 }
 
 #[derive(Debug, Error)]
-enum Error {
+enum AppError {
     #[error("no passwords given")]
     NoPasswords,
     #[error("no password is possible")]
@@ -40,9 +40,9 @@ fn main() {
     }
 }
 
-fn run(passwords: Vec<String>) -> Result<(), Error> {
+fn run(passwords: Vec<String>) -> Result<(), AppError> {
     if passwords.is_empty() {
-        Err(Error::NoPasswords)
+        Err(AppError::NoPasswords)
     } else {
         let password = hack(passwords)?;
         eprint!("The password is: ");
@@ -51,7 +51,7 @@ fn run(passwords: Vec<String>) -> Result<(), Error> {
     }
 }
 
-fn hack(mut passwords: Vec<String>) -> Result<String, Error> {
+fn hack(mut passwords: Vec<String>) -> Result<String, AppError> {
     assert!(!passwords.is_empty());
 
     let stdin = io::stdin();
@@ -78,7 +78,7 @@ fn hack(mut passwords: Vec<String>) -> Result<String, Error> {
         passwords.retain(|s| commonality(s, password) == chars_correct);
     }
 
-    passwords.pop().ok_or(Error::Impossible)
+    passwords.pop().ok_or(AppError::Impossible)
 }
 
 fn print_available(passwords: &[String]) {
