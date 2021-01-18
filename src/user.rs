@@ -142,7 +142,9 @@ where
     I: Iterator<Item = &'a str>,
 {
     let guess = tokens.next().ok_or(ParseError::MissingToken("guess"))?;
-    let correctness = tokens.next().ok_or(ParseError::MissingToken("correctness"))?;
+    let correctness = tokens
+        .next()
+        .ok_or(ParseError::MissingToken("correctness"))?;
     let correctness = correctness
         .parse::<usize>()
         .map_err(|e| ParseError::MalformedCorrectness(correctness.to_owned(), e))?;
