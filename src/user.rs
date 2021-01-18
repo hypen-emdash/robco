@@ -1,10 +1,11 @@
 use thiserror::Error;
 
 use std::io::{self, BufRead, BufReader, Stderr, Stdin, Stdout, Write};
+use std::{error::Error as StdError, fmt::Display};
 
 /// Abstracts out the interface for testing and actual usage.
 pub trait User {
-    type Err: 'static + Sync + Send + std::error::Error;
+    type Err: 'static + Sync + Send + StdError;
 
     /// Ask the user what they want to do.
     fn get_request(&mut self) -> Result<Request, Self::Err>;
@@ -17,7 +18,13 @@ pub trait User {
     /// Show the user which password is recommended to try next.
     fn show_recommended(&mut self, recommended: &str) -> Result<(), Self::Err>;
 
+    /// Show the user the correct password.
     fn show_answer(&mut self, answer: &str) -> Result<(), Self::Err>;
+
+    /// Show the user something that went wrong.
+    fn show_error<E>(&mut self, err: E) -> Result<(), Self::Err>
+    where
+        E: StdError + Display;
 }
 
 pub enum Request {
@@ -70,7 +77,7 @@ where
 
             match parse_request(&line) {
                 Ok(request) => return Ok(request),
-                Err(e) => writeln!(self.errput, "Error: {}", e)?,
+                Err(e) => self.show_error(e)?,
             }
         }
     }
@@ -98,6 +105,13 @@ where
         write!(self.errput, "Password deduced: ")?;
         writeln!(self.output, "{}", answer)?;
         Ok(())
+    }
+
+    fn show_error<T>(&mut self, err: T) -> Result<(), Self::Err>
+    where
+        T: StdError + Display,
+    {
+        writeln!(self.errput, "Error: {}\n", err)
     }
 }
 

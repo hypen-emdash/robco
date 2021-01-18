@@ -9,6 +9,8 @@ pub struct App<U> {
     pub user: U,
 }
 
+struct Terminate(bool);
+
 impl<U> App<U>
 where
     U: User,
@@ -21,18 +23,21 @@ where
                     return Ok(());
                 }
                 None => {
-                    self.step();
+                    if let Terminate(true) = self.step()? {
+                        return Ok(());
+                    }
                 }
             };
         }
     }
 
-    pub fn step(&mut self) -> anyhow::Result<()> {
+    /// If there are no errors, returns
+    fn step(&mut self) -> anyhow::Result<Terminate> {
         use user::Request;
 
         let command = self.user.get_request()?;
         match command {
-            Request::Exit => {}
+            Request::Exit => return Ok(Terminate(true)),
             Request::SeePasswords => {
                 self.user.show_passwords(self.hacker.candidates())?;
             }
@@ -41,11 +46,11 @@ where
             }
             Request::FilterPasswords { guess, correctness } => {
                 if let Err(e) = self.hacker.filter(&guess, correctness) {
-                    eprintln!("Error: {}", e);
+                    self.user.show_error(e)?;
                 }
             }
         };
 
-        Ok(())
+        Ok(Terminate(false))
     }
 }

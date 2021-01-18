@@ -3,6 +3,7 @@ use thiserror::Error;
 #[derive(Debug, Clone)]
 pub struct Hacker {
     /// All the strings that could conceivably be passwords to the terminal.
+    /// Must not have duplicates.
     passwords: Vec<String>,
 }
 
@@ -19,10 +20,12 @@ pub enum FilterError {
 impl Hacker {
     /// Creates a new hacker given a list of candidate passwords.
     /// The list must be nonempty - returns `None` if the list is empty.
-    pub fn new(passwords: Vec<String>) -> Option<Self> {
+    pub fn new(mut passwords: Vec<String>) -> Option<Self> {
         if passwords.is_empty() {
             None
         } else {
+            passwords.sort_unstable();
+            passwords.dedup();
             Some(Self { passwords })
         }
     }
@@ -90,7 +93,9 @@ impl Hacker {
         };
 
         // Recommend the candidate password that filters out the most.
-        self.candidates().min_by_key(|s| filtration_power(s)).expect("Set of candidates cannot be empty.")
+        self.candidates()
+            .min_by_key(|s| filtration_power(s))
+            .expect("Set of candidates cannot be empty.")
     }
 }
 

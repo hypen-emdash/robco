@@ -1,7 +1,6 @@
 mod hacker;
 mod user;
 
-use std::collections::HashSet;
 use std::io;
 
 use structopt::StructOpt;
@@ -40,21 +39,21 @@ fn build_hacker() -> anyhow::Result<Hacker> {
     eprintln!("Enter candidate passwords. End with blank line.");
     let stdin = io::stdin();
 
-    let mut passwords: HashSet<String> = HashSet::new();
+    let mut all_passwords = Vec::new();
     loop {
         eprint!("> ");
         let mut input = String::new();
         stdin.read_line(&mut input)?;
         let password = input.trim();
-        if password.is_empty() && !passwords.is_empty() {
+        if password.is_empty() && !all_passwords.is_empty() {
             break;
         } else {
-            passwords.insert(password.to_owned());
+            all_passwords.push(password.to_owned());
         }
     }
     eprintln!("Candidate passwords accepted.");
 
-    let hacker = Hacker::new(passwords.into_iter().collect())
-        .expect("We don't exit the loop until `passwords` is not empty.");
+    let hacker =
+        Hacker::new(all_passwords).expect("We don't exit the loop until `passwords` is not empty.");
     Ok(hacker)
 }
