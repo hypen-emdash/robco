@@ -1,120 +1,79 @@
-use structopt::StructOpt;
-use thiserror::Error;
+mod hacker;
+mod user;
 
 use std::io;
+
+use structopt::StructOpt;
+
+use robco::hacker::Hacker;
+use robco::user::TextStreamUser;
+use robco::App;
 
 #[derive(Debug, StructOpt)]
 struct Opt {
     passwords: Vec<String>,
 }
 
-#[derive(Debug, Error)]
-enum AppError {
-    #[error("no passwords given")]
-    NoPasswords,
-    #[error("no password is possible")]
-    Impossible,
-    #[error("input/output error: {0:?}")]
-    Io(#[from] io::Error),
-}
-
-#[derive(Debug, Error)]
-enum ParseError {
-    #[error("expected \"[guess] [chars correct]\", found blank line")]
-    Blank,
-    #[error("missing: number of characters correct in {0}")]
-    MissingCorrect(String),
-    #[error("malformed correctness count in \"{src}\" - {err}")]
-    BadCorrect {
-        src: String,
-        err: std::num::ParseIntError,
-    },
-    #[error("unexpected token {0}")]
-    UnexpectedToken(String),
-}
-
 fn main() {
     let opt = Opt::from_args();
-    if let Err(e) = run(opt.passwords) {
+    if let Err(e) = run(opt) {
         eprintln!("Error: {}", e);
     }
 }
 
-fn run(passwords: Vec<String>) -> Result<(), AppError> {
-    if passwords.is_empty() {
-        Err(AppError::NoPasswords)
-    } else {
-        let password = hack(passwords)?;
-        eprint!("The password is: ");
-        println!("{}", password);
-        Ok(())
-    }
+fn run(opt: Opt) -> anyhow::Result<()> {
+    let hacker = build_hacker(opt.passwords)?;
+
+    let user = TextStreamUser::std();
+
+    let mut app = App { hacker, user };
+
+    app.run()?;
+    Ok(())
 }
 
-fn hack(mut passwords: Vec<String>) -> Result<String, AppError> {
-    assert!(!passwords.is_empty());
+fn build_hacker(mut passwords: Vec<String>) -> anyhow::Result<Hacker> {
+    // First, make sure that the list of passwords isn't empty.
+    if passwords.is_empty() {
+        passwords = collect_passwords()?;
+    }
 
+    // Second, warn the user about any whitespace in their passwords.
+    warn_whitespace(&mut passwords);
+
+    Ok(Hacker::new(passwords).expect("We made sure the list of passwords was not empty."))
+}
+
+fn collect_passwords() -> anyhow::Result<Vec<String>> {
+    eprintln!("No candidate passwords detected. Enter below. Enter blank line when finished.");
+
+    let mut all_passwords = Vec::new();
     let stdin = io::stdin();
 
-    let mut guess = String::new();
-    while passwords.len() > 1 {
-        print_available(&passwords);
+    loop {
+        eprint!("> ");
+        let mut line = String::new();
+        stdin.read_line(&mut line)?;
 
-        let (password, chars_correct) = loop {
-            eprint!("> ");
-            guess.clear();
-            stdin.read_line(&mut guess)?;
+        if !all_passwords.is_empty() && &line == "\n" {
+            break;
+        }
 
-            match parse_password(&guess) {
-                Ok((p, c)) => break (p, c),
-                Err(ParseError::Blank) => continue,
-                Err(e) => {
-                    eprintln!("Error: {}", e);
-                    continue;
-                }
-            };
-        };
-
-        passwords.retain(|s| commonality(s, password) == chars_correct);
+        let password = line.trim();
+        if !password.is_empty() {
+            all_passwords.push(password.to_owned());
+        }
     }
 
-    passwords.pop().ok_or(AppError::Impossible)
+    eprintln!("Passwords collected. Thank you.\n");
+    Ok(all_passwords)
 }
 
-fn print_available(passwords: &[String]) {
-    eprintln!("Remaining possible passwords:");
-    for pw in passwords {
-        eprint!(" * ");
-        println!("{}", pw);
+fn warn_whitespace(passwords: &[String]) {
+    for pw in passwords.iter().filter(|s| s.contains(char::is_whitespace)) {
+        eprintln!(
+            "Warning: passwords with whitespace not yet supported: \"{}\".\n",
+            pw
+        );
     }
-    println!("")
-}
-
-fn parse_password(guess: &str) -> Result<(&str, usize), ParseError> {
-    let mut tokens = guess.split_whitespace();
-    let guess = tokens.next().ok_or(ParseError::Blank)?;
-    let correctness_token = tokens
-        .next()
-        .ok_or_else(|| ParseError::MissingCorrect(guess.to_owned()))?;
-    let correctness = correctness_token
-        .parse::<usize>()
-        .map_err(|err| ParseError::BadCorrect {
-            src: correctness_token.to_owned(),
-            err,
-        })?;
-
-    if let Some(extra) = tokens.next() {
-        Err(ParseError::UnexpectedToken(extra.to_owned()))
-    } else {
-        Ok((guess, correctness))
-    }
-}
-
-/// Returns the number of characters one string has in common with another.
-/// For a character to be common to both strings, it must appear in the same place.
-fn commonality(s: &str, t: &str) -> usize {
-    s.chars()
-        .zip(t.chars())
-        .map(|(sc, tc)| usize::from(sc == tc))
-        .sum()
 }

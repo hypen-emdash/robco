@@ -9,3 +9,8 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.21"
 thiserror = "1.0.23"
+anyhow = "1.0.38"
+
+[[bin]]
+name = "robco"
+path = "src/main.rs"    
