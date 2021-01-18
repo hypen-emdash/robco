@@ -73,9 +73,24 @@ impl Hacker {
 
     /// Recommend the next password to guess.
     pub fn recommend(&self) -> &str {
-        // TODO: actually compute something here.
-        debug_assert!(!self.passwords.is_empty());
-        &self.passwords[0]
+        // For a given guess, assume that all passwords are equally likely, and
+        // take the expected size of the candidate pool.
+        // (Actually, the expected size is unnormalised, but since it's always
+        // off by the same scale factor, we can ignore that.)
+        // Lower means more powerful.
+        let filtration_power = |guess| {
+            self.candidates()
+                .map(|true_password| {
+                    let correctness = commonality(true_password, guess);
+                    self.candidates()
+                        .filter(|candidate| commonality(candidate, guess) == correctness)
+                        .count()
+                })
+                .sum::<usize>()
+        };
+
+        // Recommend the candidate password that filters out the most.
+        self.candidates().min_by_key(|s| filtration_power(s)).expect("Set of candidates cannot be empty.")
     }
 }
 
