@@ -15,7 +15,7 @@ First you must enter the list of possible passwords. There are two ways of doing
 + To see the list of available passwords, use the `view` command.
 + Once you've made a guess at your RobCo terminal and seen how many characters are correct, use the `guess` command, following the format `guess <password> <correctness>`. This filters out all passwords from the list that can be eliminated. Once there is only one password left, the robco will print it and exit.
 + To see the guess that robco recommends, use the `recommend` command.
-+ To exit the program prematurely, use the `exit` command. (NOTE: this doesn't actually work just yet. For now, end the program with CTRL+C or however your shell does it.)
++ To exit the program prematurely, use the `exit` command.
 
 ## Example
 TODO
