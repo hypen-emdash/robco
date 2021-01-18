@@ -71,6 +71,9 @@ fn collect_passwords() -> anyhow::Result<Vec<String>> {
 
 fn warn_whitespace(passwords: &[String]) {
     for pw in passwords.iter().filter(|s| s.contains(char::is_whitespace)) {
-        eprintln!("Warning: passwords with whitespace not yet supported: \"{}\".\n", pw);
+        eprintln!(
+            "Warning: passwords with whitespace not yet supported: \"{}\".\n",
+            pw
+        );
     }
 }
