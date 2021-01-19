@@ -54,14 +54,16 @@ fn collect_passwords() -> anyhow::Result<Vec<String>> {
         eprint!("> ");
         let mut line = String::new();
         stdin.read_line(&mut line)?;
+        let trimmed = line.trim();
 
-        if !all_passwords.is_empty() && &line == "\n" {
-            break;
-        }
-
-        let password = line.trim();
-        if !password.is_empty() {
-            all_passwords.push(password.to_owned());
+        if trimmed.is_empty() {
+            if all_passwords.is_empty() {
+                continue;
+            } else {
+                break;
+            }
+        } else {
+            all_passwords.push(trimmed.to_owned());
         }
     }
 
