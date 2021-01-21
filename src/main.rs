@@ -1,6 +1,3 @@
-mod hacker;
-mod user;
-
 use std::io;
 
 use structopt::StructOpt;
