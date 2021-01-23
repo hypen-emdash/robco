@@ -45,14 +45,6 @@ impl Hacker {
                 guess.to_string(),
                 correctness,
             ))
-        } else if !self
-            .passwords
-            .iter()
-            .any(|pw| commonality(pw, guess) == correctness)
-        {
-            // A guess shouldn't filter out *all* remaining passwords.
-            // This won't trigger on an empty list because `UnknownPassword` would trigger first.
-            Err(FilterError::Impossible)
         } else {
             // No errors.
             // Filter out incorrect passwords.
