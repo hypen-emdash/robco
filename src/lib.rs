@@ -44,9 +44,19 @@ where
                     self.user.show_error(e)?;
                 }
             }
-            user::Command::AddPassword(_) => { todo!() }
-            user::Command::RemovePassword(_) => { todo!() }
-            user::Command::Help => { todo!() }
+            Command::AddPassword(pw) => {
+                if let Err(e) = self.hacker.add(pw) {
+                    self.user.show_error(e)?;
+                }
+            }
+            Command::RemovePassword(pw) => {
+                if let Err(e) = self.hacker.remove(pw.as_str()) {
+                    self.user.show_error(e)?;
+                }
+            }
+            Command::Help => {
+                self.user.show_help()?;
+            }
         };
 
         Ok(Terminate(false))

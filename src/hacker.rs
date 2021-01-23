@@ -104,11 +104,11 @@ impl Hacker {
             .ok_or(RecommendError::Empty)
     }
 
-    fn add(&mut self, password: String) -> Result<(), AddError> {
+    pub fn add(&mut self, password: String) -> Result<(), AddError> {
         todo!()
     }
 
-    fn remove(&mut self, password: &str) -> Result<(), RemoveError> {
+    pub fn remove(&mut self, password: &str) -> Result<(), RemoveError> {
         todo!()
     }
 }
