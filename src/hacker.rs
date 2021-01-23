@@ -11,24 +11,26 @@ pub struct Hacker {
 pub enum FilterError {
     #[error("\"{0}\" is not in the list of available passwords.")]
     UnknownPassword(String),
-    #[error("No possible passwords would remain.")]
+    #[error("no possible passwords would remain.")]
     Impossible,
     #[error("\"{0}\" cannot have {1} characters correct.")]
     InvalidCorrectness(String, usize),
 }
 
+#[derive(Debug, Error)]
+pub enum RecommendError {
+    #[error("cannot recommend password from empty list.")]
+    Empty,
+}
+
 impl Hacker {
     /// Creates a new hacker given a list of candidate passwords.
     /// The list must be nonempty - returns `None` if the list is empty.
-    pub fn new(mut passwords: Vec<String>) -> Option<Self> {
-        if passwords.is_empty() {
-            None
-        } else {
-            passwords.sort_unstable();
-            passwords.dedup();
+    pub fn new(mut passwords: Vec<String>) -> Self {
+        passwords.sort_unstable();
+        passwords.dedup();
 
-            Some(Self { passwords })
-        }
+        Self { passwords }
     }
 
     /// Filters out all passwords that don't share a correctness with `guess`.
@@ -49,6 +51,7 @@ impl Hacker {
             .any(|pw| commonality(pw, guess) == correctness)
         {
             // A guess shouldn't filter out *all* remaining passwords.
+            // This won't trigger on an empty list because `UnknownPassword` would trigger first.
             Err(FilterError::Impossible)
         } else {
             // No errors.
@@ -62,7 +65,6 @@ impl Hacker {
     /// If the hacker knows the correct password (ie if there is only one candidate left), returns it.
     /// Otherwise, returns `None`.
     pub fn answer(&self) -> Option<&str> {
-        debug_assert!(!self.passwords.is_empty());
         if self.passwords.len() == 1 {
             Some(&self.passwords[0])
         } else {
@@ -76,7 +78,8 @@ impl Hacker {
     }
 
     /// Recommend the next password to guess.
-    pub fn recommend(&self) -> &str {
+    /// If the password list is empty, returns error case.
+    pub fn recommend(&self) -> Result<&str, RecommendError> {
         // For a given guess, assume that all passwords are equally likely, and
         // take the expected size of the candidate pool.
         // (Actually, the expected size is unnormalised, but since it's always
@@ -96,7 +99,7 @@ impl Hacker {
         // Recommend the candidate password that filters out the most.
         self.candidates()
             .min_by_key(|s| filtration_power(s))
-            .expect("Set of candidates cannot be empty.")
+            .ok_or(RecommendError::Empty)
     }
 }
 

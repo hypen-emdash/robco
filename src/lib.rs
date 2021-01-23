@@ -17,21 +17,13 @@ where
 {
     pub fn run(&mut self) -> anyhow::Result<()> {
         loop {
-            match self.hacker.answer() {
-                Some(answer) => {
-                    self.user.show_answer(answer)?;
-                    return Ok(());
-                }
-                None => {
-                    if let Terminate(true) = self.step()? {
-                        return Ok(());
-                    }
-                }
-            };
+            if let Terminate(true) = self.step()? {
+                return Ok(());
+            }
         }
     }
 
-    /// If there are no errors, returns
+    /// If there are no errors, returns whether or not we should terminate the program.
     fn step(&mut self) -> anyhow::Result<Terminate> {
         use user::Request;
 
@@ -42,7 +34,9 @@ where
                 self.user.show_passwords(self.hacker.candidates())?;
             }
             Request::SeeRecommended => {
-                self.user.show_recommended(self.hacker.recommend())?;
+                if let Err(e) = self.hacker.recommend() {
+                    self.user.show_error(e)?;
+                }
             }
             Request::FilterPasswords { guess, correctness } => {
                 if let Err(e) = self.hacker.filter(&guess, correctness) {
