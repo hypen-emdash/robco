@@ -28,7 +28,7 @@ where
         use user::Command;
 
         let command = self.user.get_request()?;
-        match command {            
+        match command {
             Command::Exit => return Ok(Terminate(true)),
             Command::SeePasswords => {
                 self.user.show_passwords(self.hacker.candidates())?;

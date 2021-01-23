@@ -105,11 +105,23 @@ impl Hacker {
     }
 
     pub fn add(&mut self, password: String) -> Result<(), AddError> {
-        todo!()
+        // Borrow-checker isn't advanced enough to let us do this with a normal
+        // match statement - `None` borrows from the source.
+        if self.candidates().find(|s| s == &password).is_none() {
+            self.passwords.push(password);
+            Ok(())
+        } else {
+            Err(AddError::AlreadyPresent(password))
+        }
     }
 
     pub fn remove(&mut self, password: &str) -> Result<(), RemoveError> {
-        todo!()
+        let i = self
+            .candidates()
+            .position(|s| s == password)
+            .ok_or_else(|| RemoveError::UnknownPassword(password.to_owned()))?;
+        self.passwords.swap_remove(i);
+        Ok(())
     }
 }
 
