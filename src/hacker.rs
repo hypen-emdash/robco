@@ -21,6 +21,18 @@ pub enum RecommendError {
     Empty,
 }
 
+#[derive(Debug, Error)]
+pub enum AddError {
+    #[error("cannot add \"{0}\": already present.")]
+    AlreadyPresent(String),
+}
+
+#[derive(Debug, Error)]
+pub enum RemoveError {
+    #[error("\"{0}\" is not in the list of available passwords.")]
+    UnknownPassword(String),
+}
+
 impl Hacker {
     /// Creates a new hacker given a list of candidate passwords.
     /// The list must be nonempty - returns `None` if the list is empty.
@@ -90,6 +102,14 @@ impl Hacker {
         self.candidates()
             .min_by_key(|s| filtration_power(s))
             .ok_or(RecommendError::Empty)
+    }
+
+    fn add(&mut self, password: String) -> Result<(), AddError> {
+        todo!()
+    }
+
+    fn remove(&mut self, password: &str) -> Result<(), RemoveError> {
+        todo!()
     }
 }
 

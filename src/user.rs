@@ -25,6 +25,8 @@ pub trait User {
     fn show_error<E>(&mut self, err: E) -> Result<(), Self::Err>
     where
         E: StdError + Display;
+
+    fn show_help(&mut self) -> Result<(), Self::Err>;
 }
 
 pub enum Command {
@@ -116,6 +118,10 @@ where
         T: StdError + Display,
     {
         writeln!(self.errput, "Error: {}\n", err)
+    }
+
+    fn show_help(&mut self) -> Result<(), Self::Err> {
+        todo!()
     }
 }
 
