@@ -11,8 +11,6 @@ pub struct Hacker {
 pub enum FilterError {
     #[error("\"{0}\" is not in the list of available passwords.")]
     UnknownPassword(String),
-    #[error("no possible passwords would remain.")]
-    Impossible,
     #[error("\"{0}\" cannot have {1} characters correct.")]
     InvalidCorrectness(String, usize),
 }
