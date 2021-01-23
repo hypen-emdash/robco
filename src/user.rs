@@ -8,7 +8,7 @@ pub trait User {
     type Err: 'static + Sync + Send + StdError;
 
     /// Ask the user what they want to do.
-    fn get_request(&mut self) -> Result<Request, Self::Err>;
+    fn get_request(&mut self) -> Result<Command, Self::Err>;
 
     /// Show the user all remaining passwords.
     fn show_passwords<'a, Iter>(&mut self, passwords: Iter) -> Result<(), Self::Err>
@@ -27,11 +27,15 @@ pub trait User {
         E: StdError + Display;
 }
 
-pub enum Request {
+pub enum Command {
     Exit,
     SeePasswords,
     SeeRecommended,
+    SeeAnswer,
     FilterPasswords { guess: String, correctness: usize },
+    AddPassword(String),
+    RemovePassword(String),
+    Help,
 }
 
 pub struct TextStreamUser<I, O, E> {
@@ -69,7 +73,7 @@ where
 {
     type Err = io::Error;
 
-    fn get_request(&mut self) -> Result<Request, Self::Err> {
+    fn get_request(&mut self) -> Result<Command, Self::Err> {
         loop {
             write!(self.errput, "> ")?;
             let mut line = String::new();
@@ -129,7 +133,7 @@ pub enum ParseError {
     MalformedCorrectness(String, std::num::ParseIntError),
 }
 
-fn parse_request(line: &str) -> Result<Request, ParseError> {
+fn parse_request(line: &str) -> Result<Command, ParseError> {
     let mut tokens = line.split_whitespace();
     let command = tokens.next().ok_or(ParseError::Blank)?;
     match command {
@@ -141,17 +145,17 @@ fn parse_request(line: &str) -> Result<Request, ParseError> {
     }
 }
 
-fn parse_view<'a, I>(mut tokens: I) -> Result<Request, ParseError>
+fn parse_view<'a, I>(mut tokens: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
     match tokens.next() {
-        None => Ok(Request::SeePasswords),
+        None => Ok(Command::SeePasswords),
         Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
     }
 }
 
-fn parse_guess<'a, I>(mut tokens: I) -> Result<Request, ParseError>
+fn parse_guess<'a, I>(mut tokens: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
@@ -163,28 +167,28 @@ where
         .parse::<usize>()
         .map_err(|e| ParseError::MalformedCorrectness(correctness.to_owned(), e))?;
 
-    Ok(Request::FilterPasswords {
+    Ok(Command::FilterPasswords {
         guess: guess.to_owned(),
         correctness,
     })
 }
 
-fn parse_recommend<'a, I>(mut tokens: I) -> Result<Request, ParseError>
+fn parse_recommend<'a, I>(mut tokens: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
     match tokens.next() {
-        None => Ok(Request::SeeRecommended),
+        None => Ok(Command::SeeRecommended),
         Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
     }
 }
 
-fn parse_exit<'a, I>(mut tokens: I) -> Result<Request, ParseError>
+fn parse_exit<'a, I>(mut tokens: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
     match tokens.next() {
-        None => Ok(Request::Exit),
+        None => Ok(Command::Exit),
         Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
     }
 }

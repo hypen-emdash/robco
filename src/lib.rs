@@ -25,24 +25,28 @@ where
 
     /// If there are no errors, returns whether or not we should terminate the program.
     fn step(&mut self) -> anyhow::Result<Terminate> {
-        use user::Request;
+        use user::Command;
 
         let command = self.user.get_request()?;
-        match command {
-            Request::Exit => return Ok(Terminate(true)),
-            Request::SeePasswords => {
+        match command {            
+            Command::Exit => return Ok(Terminate(true)),
+            Command::SeePasswords => {
                 self.user.show_passwords(self.hacker.candidates())?;
             }
-            Request::SeeRecommended => {
+            Command::SeeRecommended => {
                 if let Err(e) = self.hacker.recommend() {
                     self.user.show_error(e)?;
                 }
             }
-            Request::FilterPasswords { guess, correctness } => {
+            Command::SeeAnswer => {}
+            Command::FilterPasswords { guess, correctness } => {
                 if let Err(e) = self.hacker.filter(&guess, correctness) {
                     self.user.show_error(e)?;
                 }
             }
+            user::Command::AddPassword(_) => { todo!() }
+            user::Command::RemovePassword(_) => { todo!() }
+            user::Command::Help => { todo!() }
         };
 
         Ok(Terminate(false))
