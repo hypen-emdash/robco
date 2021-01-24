@@ -8,30 +8,17 @@ pub struct Hacker {
 }
 
 #[derive(Debug, Error)]
-pub enum FilterError {
+pub enum Error {
     #[error("\"{0}\" is not in the list of available passwords.")]
-    UnknownPassword(String),
+    NotPresent(String),
+    #[error("cannot add \"{0}\": already present.")]
+    AlreadyPresent(String),
     #[error("\"{0}\" cannot have {1} characters correct.")]
     InvalidCorrectness(String, usize),
-}
-
-#[derive(Debug, Error)]
-pub enum RecommendError {
-    #[error("cannot recommend password from empty list.")]
+    #[error("pool is empty.")]
     Empty,
 }
 
-#[derive(Debug, Error)]
-pub enum AddError {
-    #[error("cannot add \"{0}\": already present.")]
-    AlreadyPresent(String),
-}
-
-#[derive(Debug, Error)]
-pub enum RemoveError {
-    #[error("\"{0}\" is not in the list of available passwords.")]
-    UnknownPassword(String),
-}
 
 impl Hacker {
     /// Creates a new hacker given a list of candidate passwords.
@@ -45,13 +32,13 @@ impl Hacker {
 
     /// Filters out all passwords that don't share a correctness with `guess`.
     /// In case of error, does nothing and returns that error.
-    pub fn filter(&mut self, guess: &str, correctness: usize) -> Result<(), FilterError> {
+    pub fn filter(&mut self, guess: &str, correctness: usize) -> Result<(), Error> {
         if !self.passwords.iter().any(|pw| pw == guess) {
             // The guess must be from the list.
-            Err(FilterError::UnknownPassword(guess.to_owned()))
+            Err(Error::NotPresent(guess.to_owned()))
         } else if correctness > guess.chars().count() {
             // A guess cannot have a higher correctness count than its length.
-            Err(FilterError::InvalidCorrectness(
+            Err(Error::InvalidCorrectness(
                 guess.to_string(),
                 correctness,
             ))
@@ -66,11 +53,11 @@ impl Hacker {
 
     /// If the hacker knows the correct password (ie if there is only one candidate left), returns it.
     /// Otherwise, returns `None`.
-    pub fn answer(&self) -> Option<&str> {
+    pub fn answer(&self) -> Result<&str, Error> {
         if self.passwords.len() == 1 {
-            Some(&self.passwords[0])
+            Ok(&self.passwords[0])
         } else {
-            None
+            Err(Error::Empty)
         }
     }
 
@@ -81,7 +68,7 @@ impl Hacker {
 
     /// Recommend the next password to guess.
     /// If the password list is empty, returns error case.
-    pub fn recommend(&self) -> Result<&str, RecommendError> {
+    pub fn recommend(&self) -> Result<&str, Error> {
         // For a given guess, assume that all passwords are equally likely, and
         // take the expected size of the candidate pool.
         // (Actually, the expected size is unnormalised, but since it's always
@@ -101,25 +88,25 @@ impl Hacker {
         // Recommend the candidate password that filters out the most.
         self.candidates()
             .min_by_key(|s| filtration_power(s))
-            .ok_or(RecommendError::Empty)
+            .ok_or(Error::Empty)
     }
 
-    pub fn add(&mut self, password: String) -> Result<(), AddError> {
+    pub fn add(&mut self, password: String) -> Result<(), Error> {
         // Borrow-checker isn't advanced enough to let us do this with a normal
         // match statement - `None` borrows from the source.
         if self.candidates().find(|s| s == &password).is_none() {
             self.passwords.push(password);
             Ok(())
         } else {
-            Err(AddError::AlreadyPresent(password))
+            Err(Error::AlreadyPresent(password))
         }
     }
 
-    pub fn remove(&mut self, password: &str) -> Result<(), RemoveError> {
+    pub fn remove(&mut self, password: &str) -> Result<(), Error> {
         let i = self
             .candidates()
             .position(|s| s == password)
-            .ok_or_else(|| RemoveError::UnknownPassword(password.to_owned()))?;
+            .ok_or_else(|| Error::NotPresent(password.to_owned()))?;
         self.passwords.swap_remove(i);
         Ok(())
     }

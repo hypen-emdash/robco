@@ -34,11 +34,17 @@ where
                 self.user.show_passwords(self.hacker.candidates())?;
             }
             Command::SeeRecommended => {
-                if let Err(e) = self.hacker.recommend() {
-                    self.user.show_error(e)?;
+                match self.hacker.recommend() {
+                    Ok(recommended) => self.user.show_recommended(recommended)?,
+                    Err(e) => self.user.show_error(e)?,
                 }
             }
-            Command::SeeAnswer => {}
+            Command::SeeAnswer => {
+                match self.hacker.answer() {
+                    Ok(answer) => self.user.show_answer(answer)?,
+                    Err(e) => self.user.show_error(e)?,
+                }
+            }
             Command::FilterPasswords { guess, correctness } => {
                 if let Err(e) = self.hacker.filter(&guess, correctness) {
                     self.user.show_error(e)?;

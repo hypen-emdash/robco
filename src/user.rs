@@ -81,7 +81,7 @@ where
             let mut line = String::new();
             self.input.read_line(&mut line)?;
 
-            match parse_request(&line) {
+            match parse_command(&line) {
                 Ok(request) => return Ok(request),
                 Err(e) => self.show_error(e)?,
             }
@@ -121,7 +121,7 @@ where
     }
 
     fn show_help(&mut self) -> Result<(), Self::Err> {
-        todo!()
+        writeln!(self.errput, "Help not yet available.")
     }
 }
 
@@ -139,34 +139,69 @@ pub enum ParseError {
     MalformedCorrectness(String, std::num::ParseIntError),
 }
 
-fn parse_request(line: &str) -> Result<Command, ParseError> {
+fn parse_command(line: &str) -> Result<Command, ParseError> {
     let mut tokens = line.split_whitespace();
     let command = tokens.next().ok_or(ParseError::Blank)?;
+    let args = tokens;
     match command {
-        "view" => parse_view(tokens),
-        "guess" => parse_guess(tokens),
-        "recommend" => parse_recommend(tokens),
-        "exit" => parse_exit(tokens),
+        "exit" => parse_exit(args),
+        "view" => parse_view(args),
+        "recommend" => parse_recommend(args),
+        "answer" => parse_answer(args), 
+        "guess" => parse_guess(args),
+        "add" => parse_add(args),
+        "remove" => parse_remove(args),
+        "help" => parse_help(args),
         unrecognised => Err(ParseError::UnrecognisedCommand(unrecognised.to_owned())),
     }
 }
 
-fn parse_view<'a, I>(mut tokens: I) -> Result<Command, ParseError>
+fn parse_exit<'a, I>(mut args: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
-    match tokens.next() {
+    match args.next() {
+        None => Ok(Command::Exit),
+        Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
+    }
+}
+
+fn parse_help<'a, I>(mut args: I) -> Result<Command, ParseError>
+where
+    I: Iterator<Item = &'a str>,
+{
+    match args.next() {
+        None => Ok(Command::Help),
+        Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
+    }
+}
+
+fn parse_view<'a, I>(mut args: I) -> Result<Command, ParseError>
+where
+    I: Iterator<Item = &'a str>,
+{
+    match args.next() {
         None => Ok(Command::SeePasswords),
         Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
     }
 }
 
-fn parse_guess<'a, I>(mut tokens: I) -> Result<Command, ParseError>
+fn parse_answer<'a, I>(mut args: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
-    let guess = tokens.next().ok_or(ParseError::MissingToken("guess"))?;
-    let correctness = tokens
+    match args.next() {
+        None => Ok(Command::SeeAnswer),
+        Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
+    }
+}
+
+fn parse_guess<'a, I>(mut args: I) -> Result<Command, ParseError>
+where
+    I: Iterator<Item = &'a str>,
+{
+    let guess = args.next().ok_or(ParseError::MissingToken("guess"))?;
+    let correctness = args
         .next()
         .ok_or(ParseError::MissingToken("correctness"))?;
     let correctness = correctness
@@ -179,22 +214,32 @@ where
     })
 }
 
-fn parse_recommend<'a, I>(mut tokens: I) -> Result<Command, ParseError>
+fn parse_recommend<'a, I>(mut args: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
-    match tokens.next() {
+    match args.next() {
         None => Ok(Command::SeeRecommended),
         Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
     }
 }
 
-fn parse_exit<'a, I>(mut tokens: I) -> Result<Command, ParseError>
+fn parse_add<'a, I>(mut args: I) -> Result<Command, ParseError>
 where
     I: Iterator<Item = &'a str>,
 {
-    match tokens.next() {
-        None => Ok(Command::Exit),
-        Some(tok) => Err(ParseError::UnexpectedToken(tok.to_owned())),
+    match args.next() {
+        Some(pw) => Ok(Command::AddPassword(pw.to_owned())),
+        None => Err(ParseError::MissingToken("password to add"))
+    }
+}
+
+fn parse_remove<'a, I>(mut args: I) -> Result<Command, ParseError>
+where
+    I: Iterator<Item = &'a str>,
+{
+    match args.next() {
+        Some(pw) => Ok(Command::RemovePassword(pw.to_owned())),
+        None => Err(ParseError::MissingToken("password to remove"))
     }
 }
