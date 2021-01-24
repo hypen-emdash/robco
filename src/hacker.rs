@@ -62,7 +62,7 @@ impl Hacker {
     }
 
     /// Get a list of all strings that could be the password.
-    pub fn candidates(&self) -> impl Iterator<Item = &str> {
+    pub fn candidates(&self) -> impl ExactSizeIterator<Item = &str> {
         self.passwords.iter().map(|pw: &String| pw.as_ref())
     }
 

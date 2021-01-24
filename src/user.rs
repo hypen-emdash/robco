@@ -13,7 +13,7 @@ pub trait User {
     /// Show the user all remaining passwords.
     fn show_passwords<'a, Iter>(&mut self, passwords: Iter) -> Result<(), Self::Err>
     where
-        Iter: Iterator<Item = &'a str>;
+        Iter: ExactSizeIterator<Item = &'a str>;
 
     /// Show the user which password is recommended to try next.
     fn show_recommended(&mut self, recommended: &str) -> Result<(), Self::Err>;
@@ -90,13 +90,13 @@ where
 
     fn show_passwords<'a, Iter>(&mut self, passwords: Iter) -> Result<(), Self::Err>
     where
-        Iter: Iterator<Item = &'a str>,
+        Iter: ExactSizeIterator<Item = &'a str>,
     {
-        writeln!(self.errput, "Remaining candidate passwords:")?;
+        writeln!(self.errput, "Remaining candidate passwords: ({})", passwords.len())?;
         for pw in passwords {
             writeln!(self.output, " * {}", pw)?;
         }
-        writeln!(self.output, "")?;
+        writeln!(self.errput)?;
 
         Ok(())
     }
@@ -104,12 +104,14 @@ where
     fn show_recommended(&mut self, recommended: &str) -> Result<(), Self::Err> {
         write!(self.errput, "Recommended: ")?;
         writeln!(self.output, "{}", recommended)?;
+        writeln!(self.errput)?;
         Ok(())
     }
 
     fn show_answer(&mut self, answer: &str) -> Result<(), Self::Err> {
         write!(self.errput, "Password deduced: ")?;
         writeln!(self.output, "{}", answer)?;
+        writeln!(self.errput)?;
         Ok(())
     }
 
@@ -117,11 +119,15 @@ where
     where
         T: StdError + Display,
     {
-        writeln!(self.errput, "Error: {}\n", err)
+        writeln!(self.errput, "Error: {}", err)?;
+        writeln!(self.errput)?;
+        Ok(())
     }
 
     fn show_help(&mut self) -> Result<(), Self::Err> {
-        writeln!(self.errput, "Help not yet available.")
+        writeln!(self.errput, "Help not yet available.")?;
+        writeln!(self.errput)?;
+        Ok(())
     }
 }
 
