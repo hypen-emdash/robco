@@ -1,5 +1,5 @@
 # robco
-A command-line tool to assist the hacking of RobCo terminals in case of forgotten password. Please use ethically.
+A command-line tool to assist in hacking minigame of the video game _Fallout: New Vegas_.
 
 ## Setup
 Robco is written in Rust 1.49.0, so make sure that is installed.
